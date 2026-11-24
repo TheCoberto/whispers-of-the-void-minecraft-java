@@ -1,0 +1,31 @@
+plugins {
+	id 'java'
+}
+
+group = 'com.thecoberto'
+version = '1.0.0'
+
+repositories {
+	mavenCentral()
+	maven { url = 'https://repo.papermc.io/repository/maven-public/' }
+	maven { url = 'https://maven.citizensnpcs.co/repo' }
+}
+
+dependencies {
+	compileOnly 'io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT'
+	// Optional at runtime: Herobrine and Shifted Players need Citizens.
+	compileOnly('net.citizensnpcs:citizens-main:2.0.44-SNAPSHOT') {
+		transitive = false
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+processResources {
+	inputs.property "version", project.version
+	filesMatching("plugin.yml") {
+		expand "version": project.version
+	}
+}

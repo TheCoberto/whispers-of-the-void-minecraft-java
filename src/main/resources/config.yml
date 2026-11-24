@@ -1,0 +1,14 @@
+# Which creatures spawn on their own. Change these in game with /whispers spawns.
+# /whispers summon still works for creatures that are off.
+spawns:
+  shifter: true
+  presence: true
+  herobrine: true
+  eyes: true
+  staring: true
+
+# Herobrine looks like Steve unless you give him a skin. To use one: upload the skin
+# PNG at https://mineskin.org, then copy its texture "value" and "signature" here.
+herobrine-skin:
+  value: ''
+  signature: ''

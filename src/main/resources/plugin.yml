@@ -1,0 +1,16 @@
+name: WhispersOfTheVoid
+version: '${version}'
+main: com.thecoberto.whispers.WhispersPlugin
+api-version: '1.21'
+softdepend: [Citizens]
+description: Creatures that stalk, hide and watch you, plus two bosses.
+author: TheCoberto
+commands:
+  whispers:
+    description: Spawn settings, summon a creature, or make animals stare
+    usage: /whispers <spawns [creature on|off]|summon <creature>|stare>
+    permission: whispers.admin
+permissions:
+  whispers.admin:
+    description: Change spawn settings and summon creatures
+    default: op
