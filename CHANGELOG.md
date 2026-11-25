@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.0.2
 - The Shifter has a dark, player-shaped body (with Citizens and `shifter-skin` set in `config.yml`, from `shifter_skin.png`) instead of looking like an Enderman.
 - The Shifter no longer vanishes the moment it appears: one that drops its disguise (or a Shifted Player) next to you always comes after you, stalkers stay 30-60 seconds, and one that vanishes when watched needs a few seconds of staring.
 - Herobrine lurks: he stares, wanders to new spots, stops dead when you catch him walking, and sometimes moves while you look away. He only vanishes if you get within 7 blocks or hit him.
