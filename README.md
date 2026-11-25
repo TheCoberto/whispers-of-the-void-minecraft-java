@@ -4,10 +4,10 @@ Paper port of the Bedrock add-on [whispers-of-the-void](https://github.com/TheCo
 
 ## Creatures
 
-- **The Shifter**: hides as an ordinary mob (sheep, pig, cow, chicken, wolf, skeleton, zombie, spider, creeper, villager) that never attacks and keeps looking at you. Walk within 4 blocks (or hit it) and it reveals itself as a tall dark figure that, depending on its mood, stalks you and vanishes, stalks then chases, chases straight away, vanishes when you look at it and comes back invisible from behind, or sniffs you out unless you sneak. 500 health; its hits weaken you; vanishing blinds anyone within 10 blocks.
+- **The Shifter**: hides as an ordinary mob (sheep, pig, cow, chicken, wolf, skeleton, zombie, spider, creeper, villager) that never attacks and keeps looking at you. Walk within 4 blocks (or hit it) and it reveals itself as a tall dark figure (a player-shaped NPC with its own skin when Citizens is installed and `shifter-skin` is set) that, depending on its mood, stalks you and vanishes, stalks then chases, chases straight away, vanishes when you look at it and comes back invisible from behind, or sniffs you out unless you sneak. 500 health; its hits weaken you; vanishing blinds anyone within 10 blocks.
 - **Shifted Players** (needs Citizens): the Shifter as a player with armor and tools, using an online player's name and skin, or a familiar-sounding one. They come for you and reveal the Shifter when close.
 - **Shifter presence**: an unseen Shifter near you for 30-60 seconds in the dark. Whistles, knocks, footsteps, torches going out, and maybe a jumpscare.
-- **Herobrine** (needs Citizens): never attacks. Appears 28-48 blocks away and watches you. Walk toward him and he backs away; get within 8 blocks or hit him and he's gone. Torches near him go out.
+- **Herobrine** (needs Citizens): never attacks. Appears 28-48 blocks away and watches you. He lurks: stares, wanders to new spots, stops dead when you catch him walking, and sometimes moves while you look away. Get within 7 blocks or hit him and he's gone. Torches near him go out.
 - **Eyes in the Dark**: pale eyes in the darkness that blink, and vanish when you get within 12 blocks.
 - **Staring animals**: if you haven't slept in over a day, very rarely a herd of farm animals freezes and stares at you in total silence, then goes back to normal.
 
@@ -26,7 +26,7 @@ Paper port of the Bedrock add-on [whispers-of-the-void](https://github.com/TheCo
 
 Paper can't add new mobs or models, so:
 
-- The Shifter's true form is an Enderman underneath (a little bigger, no block carrying or teleporting, unharmed by water). Its disguises are the real mobs.
+- The Shifter is an invisible Enderman underneath (no block carrying or teleporting, unharmed by water), with a Citizens NPC wearing `shifter_skin.png` as its body. Without Citizens or `shifter-skin` set, you see the Enderman. Its disguises are the real mobs.
 - Herobrine and Shifted Players are Citizens NPCs. Without Citizens they're skipped. Herobrine looks like Steve unless you set `herobrine-skin` in `config.yml` (upload a skin at mineskin.org and paste its value and signature).
 - Eyes in the Dark are glowing text, the bosses are scaled-up creeper and skeleton (one head, not three), and staring animals don't tilt their heads.
 - Sounds are vanilla ones (the Bedrock add-on's Shifter sounds aren't included). There's no fog, and Foxy isn't included.
