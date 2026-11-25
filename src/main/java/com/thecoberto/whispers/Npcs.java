@@ -53,6 +53,8 @@ final class Npcs implements Listener {
 		boolean staring = true;
 		int modeTicks;
 		int modeLength = 20 * 6;
+		/** Shifted Player: ticks a player has stayed close. */
+		int closeTicks;
 
 		State(boolean herobrine, int life) {
 			this.herobrine = herobrine;
@@ -66,7 +68,7 @@ final class Npcs implements Listener {
 	private final Map<NPC, State> npcs = new HashMap<>();
 
 	/** The Shifter's visible bodies: the (invisible) Enderman underneath -> the NPC that follows it. */
-	private final Map<org.bukkit.entity.Enderman, NPC> bodies = new HashMap<>();
+	private final Map<org.bukkit.entity.Mob, NPC> bodies = new HashMap<>();
 
 	Npcs(WhispersPlugin plugin) {
 		this.plugin = plugin;
@@ -88,7 +90,12 @@ final class Npcs implements Listener {
 	 * and keeps doing the moving and fighting, and an NPC with the Shifter skin follows it
 	 * every tick. Returns false (leaving the plain Enderman) if no skin is set up.
 	 */
-	boolean attachShifterBody(org.bukkit.entity.Enderman shifter) {
+	boolean hasShifterSkin() {
+		return !plugin.getConfig().getString("shifter-skin.value", "").isEmpty()
+				&& !plugin.getConfig().getString("shifter-skin.signature", "").isEmpty();
+	}
+
+	boolean attachShifterBody(org.bukkit.entity.Mob shifter) {
 		String value = plugin.getConfig().getString("shifter-skin.value", "");
 		String signature = plugin.getConfig().getString("shifter-skin.signature", "");
 		if (value.isEmpty() || signature.isEmpty()) return false;
@@ -106,7 +113,7 @@ final class Npcs implements Listener {
 
 	private void tickBodies() {
 		bodies.entrySet().removeIf(entry -> {
-			org.bukkit.entity.Enderman shifter = entry.getKey();
+			org.bukkit.entity.Mob shifter = entry.getKey();
 			NPC npc = entry.getValue();
 			if (!shifter.isValid()) {
 				npc.destroy();
@@ -131,7 +138,7 @@ final class Npcs implements Listener {
 	private final Map<NPC, Integer> hiddenBodies = new HashMap<>();
 
 	/** Makes a Shifter's body invisible for a while. False if it has no body. */
-	boolean hideShifterBody(org.bukkit.entity.Enderman shifter, int ticks) {
+	boolean hideShifterBody(org.bukkit.entity.Mob shifter, int ticks) {
 		NPC npc = bodies.get(shifter);
 		if (npc == null) return false;
 		hiddenBodies.put(npc, ticks);
@@ -139,8 +146,8 @@ final class Npcs implements Listener {
 	}
 
 	/** The Enderman a Shifter body belongs to, or null. */
-	private org.bukkit.entity.Enderman shifterOf(NPC npc) {
-		for (Map.Entry<org.bukkit.entity.Enderman, NPC> entry : bodies.entrySet()) {
+	private org.bukkit.entity.Mob shifterOf(NPC npc) {
+		for (Map.Entry<org.bukkit.entity.Mob, NPC> entry : bodies.entrySet()) {
 			if (entry.getValue() == npc) return entry.getKey();
 		}
 		return null;
@@ -247,11 +254,17 @@ final class Npcs implements Listener {
 					WhispersPlugin.snuffTorches(body.getLocation(), 4, 1);
 				}
 			} else {
-				if (distance <= 4) {
+				// Walks up like a player would, stops a few blocks away and just looks at you.
+				// It only gives itself away once you've stayed close for a couple of seconds.
+				state.closeTicks = distance <= Shifter.REVEAL_RANGE ? state.closeTicks + 10 : 0;
+				if (state.closeTicks >= Shifter.REVEAL_AFTER_TICKS) {
 					reveal(npc);
 					continue;
 				}
-				if (distance <= 20 && !npc.getNavigator().isNavigating()) npc.getNavigator().setTarget(player, true);
+				if (distance <= 5) {
+					npc.getNavigator().cancelNavigation();
+					npc.faceLocation(player.getEyeLocation());
+				} else if (distance <= 20 && !npc.getNavigator().isNavigating()) npc.getNavigator().setTarget(player.getLocation());
 			}
 		}
 	}
@@ -269,6 +282,11 @@ final class Npcs implements Listener {
 		}
 		state.modeTicks += 10;
 		boolean watched = isWatching(player, body);
+		// Looking at him is fine; just a tiny chance he's gone (about once per 2 minutes of staring back).
+		if (watched && random.nextDouble() < 0.004) {
+			vanishHerobrine(npc);
+			return;
+		}
 		if (state.modeTicks >= state.modeLength) {
 			state.modeTicks = 0;
 			if (state.staring) {
@@ -282,13 +300,16 @@ final class Npcs implements Listener {
 						return;
 					}
 				}
-				Location spot = WhispersPlugin.findSpot(player.getLocation(), 18, 36, 15);
-				if (spot != null) {
-					state.staring = false;
-					state.modeLength = 20 * random.nextInt(6, 16);
-					npc.getNavigator().getLocalParameters().speedModifier(0.7f);
-					npc.getNavigator().setTarget(spot);
-					return;
+				// Now and then he strolls a few blocks, near where he stands and never toward you.
+				if (random.nextDouble() < 0.3) {
+					Location spot = WhispersPlugin.findSpot(body.getLocation(), 3, 8, 15);
+					if (spot != null && spot.distance(player.getLocation()) >= 12) {
+						state.staring = false;
+						state.modeLength = 20 * random.nextInt(4, 9);
+						npc.getNavigator().getLocalParameters().speedModifier(0.5f);
+						npc.getNavigator().setTarget(spot);
+						return;
+					}
 				}
 			}
 			state.staring = true;
@@ -318,7 +339,7 @@ final class Npcs implements Listener {
 
 	@EventHandler
 	public void onDamage(NPCDamageByEntityEvent event) {
-		org.bukkit.entity.Enderman shifter = shifterOf(event.getNPC());
+		org.bukkit.entity.Mob shifter = shifterOf(event.getNPC());
 		if (shifter != null) {
 			// Hitting the Shifter's body hits the Shifter.
 			event.setCancelled(true);
