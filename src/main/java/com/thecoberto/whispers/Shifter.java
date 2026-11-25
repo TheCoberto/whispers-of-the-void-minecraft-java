@@ -173,10 +173,12 @@ final class Shifter implements Listener {
 		state.age += 5;
 		state.moodTicks += 5;
 		Player player = WhispersPlugin.nearestPlayer(shifter.getLocation(), 64);
-		if (player == null || state.age > 20 * 60 * 3) {
+		if (state.age > 20 * 60 * 3 || player == null && state.age > 20 * 30) {
 			shifter.remove();
 			return true;
 		}
+		// Nobody in survival/adventure nearby (e.g. you're in creative): it just waits.
+		if (player == null) return false;
 		double distance = player.getLocation().distance(shifter.getLocation());
 		if (state.chasing) {
 			if (shifter.getTarget() != player) shifter.setTarget(player);

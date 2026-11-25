@@ -8,7 +8,7 @@ author: TheCoberto
 commands:
   whispers:
     description: Spawn settings, summon a creature, or make animals stare
-    usage: /whispers <spawns [creature on|off]|summon <creature>|stare>
+    usage: /whispers <spawns [creature on|off]|summon <creature> [distance]|stare>
     permission: whispers.admin
 permissions:
   whispers.admin:

@@ -252,12 +252,28 @@ public final class WhispersPlugin extends JavaPlugin {
 			sender.sendMessage(list);
 			return true;
 		}
-		if (args.length == 2 && args[0].equalsIgnoreCase("summon")) {
+		if ((args.length == 2 || args.length == 3) && args[0].equalsIgnoreCase("summon")) {
 			if (!(sender instanceof Player player)) return error(sender, "Only players can summon (it appears in front of you).");
 			String kind = args[1].toLowerCase(Locale.ROOT);
 			if (!SUMMONABLE.contains(kind)) return error(sender, "Creatures: " + String.join(", ", SUMMONABLE));
-			Location at = player.getLocation().add(player.getLocation().getDirection().setY(0).normalize().multiply(kind.equals("herobrine") ? 12 : 4));
+			// Far enough by default that Herobrine doesn't vanish and a Shifted Player doesn't reveal at once.
+			int distance = switch (kind) {
+				case "herobrine" -> 24;
+				case "shifter", "shifted_player" -> 16;
+				default -> 4;
+			};
+			if (args.length == 3) {
+				try {
+					distance = Integer.parseInt(args[2]);
+				} catch (NumberFormatException e) {
+					return error(sender, "Distance must be a whole number of blocks.");
+				}
+				if (distance < 1 || distance > 64) return error(sender, "Distance must be 1-64 blocks.");
+			}
+			Location at = player.getLocation().add(player.getLocation().getDirection().setY(0).normalize().multiply(distance));
 			at.setY(player.getLocation().getY());
+			at = standingSpot(at);
+			at.setDirection(player.getLocation().toVector().subtract(at.toVector()));
 			if (!spawn(kind, at, player)) return error(sender, "That needs the Citizens plugin.");
 			sender.sendMessage(Component.text("Summoned " + kind + "."));
 			return true;
@@ -277,8 +293,24 @@ public final class WhispersPlugin extends JavaPlugin {
 		else if (args.length == 2 && args[0].equalsIgnoreCase("spawns")) options.addAll(SETTINGS);
 		else if (args.length == 2 && args[0].equalsIgnoreCase("summon")) options.addAll(SUMMONABLE);
 		else if (args.length == 3 && args[0].equalsIgnoreCase("spawns")) options.addAll(List.of("on", "off"));
+		else if (args.length == 3 && args[0].equalsIgnoreCase("summon")) options.addAll(List.of("16", "24", "32", "48"));
 		String typed = args[args.length - 1].toLowerCase(Locale.ROOT);
 		return options.stream().filter(o -> o.startsWith(typed)).toList();
+	}
+
+	/** The nearest spot to stand on (solid below, two free blocks), searching up and down from at. */
+	private static Location standingSpot(Location at) {
+		World world = at.getWorld();
+		int x = at.getBlockX(), z = at.getBlockZ(), y0 = at.getBlockY();
+		for (int i = 0; i <= 24; i++) {
+			for (int y : new int[] {y0 - i, y0 + i}) {
+				if (world.getBlockAt(x, y - 1, z).getType().isSolid() && world.getBlockAt(x, y, z).isPassable()
+						&& world.getBlockAt(x, y + 1, z).isPassable()) {
+					return new Location(world, x + 0.5, y, z + 0.5);
+				}
+			}
+		}
+		return at;
 	}
 
 	private static boolean error(CommandSender sender, String message) {

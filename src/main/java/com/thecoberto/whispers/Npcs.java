@@ -142,6 +142,9 @@ final class Npcs implements Listener {
 			State state = entry.getValue();
 			Entity body = npc.getEntity();
 			if (!npc.isSpawned() || body == null) {
+				// Citizens briefly respawns an NPC while it applies its skin; don't lose it then.
+				state.age += 10;
+				if (state.age < 20 * 5) continue;
 				npcs.remove(npc);
 				npc.destroy();
 				continue;
