@@ -12,3 +12,9 @@ spawns:
 herobrine-skin:
   value: ''
   signature: ''
+
+# The Shifter's dark, player-shaped body (shifter_skin.png in the plugin's repo), set up
+# the same way. Without it (or without Citizens) the Shifter shows as a plain Enderman.
+shifter-skin:
+  value: ''
+  signature: ''

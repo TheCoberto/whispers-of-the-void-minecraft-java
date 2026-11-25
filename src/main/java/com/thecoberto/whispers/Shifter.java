@@ -70,6 +70,10 @@ final class Shifter implements Listener {
 		boolean chasing;
 		int age;
 		int moodTicks;
+		/** When STALK_AND_VANISH gives up, picked once. */
+		int vanishAfter = 20 * ThreadLocalRandom.current().nextInt(30, 61);
+		/** How long the player has kept looking straight at it. */
+		int watchedTicks;
 	}
 
 	private final WhispersPlugin plugin;
@@ -114,7 +118,21 @@ final class Shifter implements Listener {
 		at.getWorld().playSound(at, Sound.ENTITY_ENDERMAN_STARE, SoundCategory.HOSTILE, 1.5f, 0.6f);
 		WhispersPlugin.smoke(at);
 		disguise.remove();
-		spawnShifter(at);
+		spawnRevealed(at);
+	}
+
+	/**
+	 * A Shifter that just dropped its disguise right next to someone. It never vanishes
+	 * straight away: it stalks then chases, chases, or sniffs you out.
+	 */
+	Enderman spawnRevealed(Location at) {
+		Enderman shifter = spawnShifter(at);
+		State state = shifters.get(shifter.getUniqueId());
+		if (state != null) {
+			int pick = ThreadLocalRandom.current().nextInt(100);
+			state.mood = pick < 45 ? Mood.STALK_THEN_CHASE : pick < 80 ? Mood.CHASE : Mood.SEEKER;
+		}
+		return shifter;
 	}
 
 	// ---------- The Shifter ----------
@@ -130,6 +148,8 @@ final class Shifter implements Listener {
 			setBase(e, Attribute.GENERIC_SCALE, 1.1);
 			e.setRemoveWhenFarAway(true);
 		});
+		// Its dark player-shaped body, when Citizens and the skin are set up.
+		if (plugin.npcs != null) plugin.npcs.attachShifterBody(shifter);
 		State state = new State();
 		state.mood = Mood.roll();
 		shifters.put(shifter.getUniqueId(), state);
@@ -190,8 +210,12 @@ final class Shifter implements Listener {
 		shifter.lookAt(player);
 		switch (state.mood) {
 			case STALK_AND_VANISH -> {
-				if (distance <= 3 || state.moodTicks > 20 * ThreadLocalRandom.current().nextInt(20, 41)) return vanish(shifter);
-				stalk(shifter, player, distance);
+				// Stalks for 30-60 seconds before vanishing. Caught up close early on, it chases instead.
+				if (state.moodTicks > state.vanishAfter) return vanish(shifter);
+				if (distance <= 3) {
+					if (state.age < 20 * 20) chase(shifter, player, state);
+					else return vanish(shifter);
+				} else stalk(shifter, player, distance);
 			}
 			case STALK_THEN_CHASE -> {
 				if (state.moodTicks > 20 * 10 || distance <= 3) chase(shifter, player, state);
@@ -199,7 +223,10 @@ final class Shifter implements Listener {
 			}
 			case CHASE -> chase(shifter, player, state);
 			case VANISH_WHEN_WATCHED -> {
-				if (isWatching(player, shifter)) {
+				// Needs a few seconds of being stared at (after stalking a while), not one glance.
+				if (isWatching(player, shifter)) state.watchedTicks += 5;
+				else state.watchedTicks = Math.max(0, state.watchedTicks - 5);
+				if (state.age > 20 * 15 && state.watchedTicks >= 20 * 3) {
 					// Gone... then back, invisible, creeping up from behind.
 					Location behind = player.getLocation().subtract(player.getLocation().getDirection().setY(0).normalize().multiply(12));
 					Location spot = WhispersPlugin.findSpot(behind, 0, 3, 15);
@@ -208,7 +235,9 @@ final class Shifter implements Listener {
 						Bukkit.getScheduler().runTaskLater(plugin, () -> {
 							Enderman creeper = spawnShifter(spot);
 							{
-								creeper.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 20 * 60, 0, false, false));
+								if (plugin.npcs == null || !plugin.npcs.hideShifterBody(creeper, 20 * 60)) {
+									creeper.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 20 * 60, 0, false, false));
+								}
 								State s = shifters.get(creeper.getUniqueId());
 								if (s != null) {
 									s.mood = Mood.CHASE;
