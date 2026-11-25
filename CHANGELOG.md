@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.3
+- Herobrine, Shifted Players and the Shifter's body no longer count as players. Each one found *itself* as the nearest player, which made Herobrine vanish and Shifted Players reveal the moment they appeared.
+- Herobrine stays and stares when you look at him, with only a tiny chance of vanishing. Getting within 7 blocks or hitting him still makes him vanish.
+- Herobrine now and then strolls a few blocks near where he stands (never toward you). Before, he tried to walk to spots too far away, gave up and only stared.
+- The Shifter's body no longer has an Enderman's glowing eyes floating above it: underneath it's now an invisible Husk (a plain Enderman only when there's no skin).
+- Disguises and Shifted Players reveal themselves only after you stay within 3 blocks for 2 seconds (or hit them). Shifted Players walk up, stop a few blocks away and look at you.
+
 ## 1.0.2
 - The Shifter has a dark, player-shaped body (with Citizens and `shifter-skin` set in `config.yml`, from `shifter_skin.png`) instead of looking like an Enderman.
 - The Shifter no longer vanishes the moment it appears: one that drops its disguise (or a Shifted Player) next to you always comes after you, stalkers stay 30-60 seconds, and one that vanishes when watched needs a few seconds of staring.

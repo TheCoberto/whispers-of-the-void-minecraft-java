@@ -187,6 +187,9 @@ public final class WhispersPlugin extends JavaPlugin {
 
 	/** Survival or adventure: creative and spectator players are left alone. */
 	static boolean isPlaying(Player player) {
+		// Citizens NPCs (Herobrine, Shifted Players, the Shifter's body) are Players too: never count them,
+		// or each one finds itself as the nearest player, 0 blocks away.
+		if (player.hasMetadata("NPC")) return false;
 		return player.getGameMode() == GameMode.SURVIVAL || player.getGameMode() == GameMode.ADVENTURE;
 	}
 

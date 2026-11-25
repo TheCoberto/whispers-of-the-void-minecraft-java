@@ -11,7 +11,6 @@ import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.attribute.Attribute;
-import org.bukkit.entity.Enderman;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -40,7 +39,9 @@ final class Shifter implements Listener {
 	private static final List<EntityType> DISGUISES = List.of(EntityType.SHEEP, EntityType.PIG, EntityType.COW,
 			EntityType.CHICKEN, EntityType.WOLF, EntityType.SKELETON, EntityType.ZOMBIE, EntityType.SPIDER,
 			EntityType.CREEPER, EntityType.VILLAGER);
-	private static final double REVEAL_RANGE = 4;
+	static final double REVEAL_RANGE = 3;
+	/** How long someone has to stay within REVEAL_RANGE before a disguise reveals itself. */
+	static final int REVEAL_AFTER_TICKS = 40;
 	private static final int DISGUISE_LIFE_TICKS = 180 * 20;
 	private static final double HEALTH = 500;
 	private static final double DAMAGE = 13;
@@ -79,6 +80,7 @@ final class Shifter implements Listener {
 	private final WhispersPlugin plugin;
 	private final Map<UUID, State> shifters = new HashMap<>();
 	private final Map<UUID, Integer> disguises = new HashMap<>(); // id -> age in ticks
+	private final Map<UUID, Integer> closeTicks = new HashMap<>(); // id -> ticks a player has been close
 
 	Shifter(WhispersPlugin plugin) {
 		this.plugin = plugin;
@@ -125,8 +127,8 @@ final class Shifter implements Listener {
 	 * A Shifter that just dropped its disguise right next to someone. It never vanishes
 	 * straight away: it stalks then chases, chases, or sniffs you out.
 	 */
-	Enderman spawnRevealed(Location at) {
-		Enderman shifter = spawnShifter(at);
+	Mob spawnRevealed(Location at) {
+		Mob shifter = spawnShifter(at);
 		State state = shifters.get(shifter.getUniqueId());
 		if (state != null) {
 			int pick = ThreadLocalRandom.current().nextInt(100);
@@ -137,19 +139,30 @@ final class Shifter implements Listener {
 
 	// ---------- The Shifter ----------
 
-	Enderman spawnShifter(Location at) {
-		Enderman shifter = at.getWorld().spawn(at, Enderman.class, CreatureSpawnEvent.SpawnReason.CUSTOM, e -> {
+	Mob spawnShifter(Location at) {
+		// With its player-shaped body, the mob underneath is an invisible Husk: an invisible
+		// Enderman still shows its glowing eyes, floating above the body. Without a body
+		// (no Citizens or no skin) it's a plain Enderman.
+		boolean body = plugin.npcs != null && plugin.npcs.hasShifterSkin();
+		Class<? extends Mob> type = body ? org.bukkit.entity.Husk.class : org.bukkit.entity.Enderman.class;
+		Mob shifter = at.getWorld().spawn(at, type, CreatureSpawnEvent.SpawnReason.CUSTOM, e -> {
 			WhispersPlugin.tag(e, "shifter");
-			e.setCarriedBlock(null);
+			if (e instanceof org.bukkit.entity.Enderman enderman) enderman.setCarriedBlock(null);
+			if (e instanceof org.bukkit.entity.Husk husk) {
+				husk.setAdult();
+				husk.setCanPickupItems(false);
+				husk.setShouldBurnInDay(false);
+				husk.getEquipment().clear();
+			}
 			setBase(e, Attribute.GENERIC_MAX_HEALTH, HEALTH);
 			e.setHealth(HEALTH);
 			setBase(e, Attribute.GENERIC_ATTACK_DAMAGE, DAMAGE);
 			setBase(e, Attribute.GENERIC_MOVEMENT_SPEED, 0.25);
-			setBase(e, Attribute.GENERIC_SCALE, 1.1);
+			// The Husk matches the body's size (1.2x a player); the Enderman is tall already.
+			setBase(e, Attribute.GENERIC_SCALE, body ? 1.2 : 1.1);
 			e.setRemoveWhenFarAway(true);
 		});
-		// Its dark player-shaped body, when Citizens and the skin are set up.
-		if (plugin.npcs != null) plugin.npcs.attachShifterBody(shifter);
+		if (body) plugin.npcs.attachShifterBody(shifter);
 		State state = new State();
 		state.mood = Mood.roll();
 		shifters.put(shifter.getUniqueId(), state);
@@ -175,7 +188,11 @@ final class Shifter implements Listener {
 			Player near = WhispersPlugin.nearestPlayer(mob.getLocation(), 64);
 			if (near == null) return false;
 			mob.lookAt(near);
-			if (near.getLocation().distance(mob.getLocation()) <= REVEAL_RANGE) {
+			// Reveals only once someone has stayed close for a couple of seconds, not on one step in.
+			int close = near.getLocation().distance(mob.getLocation()) <= REVEAL_RANGE ? closeTicks.merge(entry.getKey(), 5, Integer::sum) : 0;
+			if (close == 0) closeTicks.remove(entry.getKey());
+			if (close >= REVEAL_AFTER_TICKS) {
+				closeTicks.remove(entry.getKey());
 				Bukkit.getScheduler().runTask(plugin, () -> reveal(mob));
 			}
 			return false;
@@ -183,13 +200,13 @@ final class Shifter implements Listener {
 
 		shifters.entrySet().removeIf(entry -> {
 			Entity e = Bukkit.getEntity(entry.getKey());
-			if (!(e instanceof Enderman shifter) || !shifter.isValid()) return true;
+			if (!(e instanceof Mob shifter) || !shifter.isValid()) return true;
 			return tickShifter(shifter, entry.getValue());
 		});
 	}
 
 	/** Returns true when the Shifter is gone. */
-	private boolean tickShifter(Enderman shifter, State state) {
+	private boolean tickShifter(Mob shifter, State state) {
 		state.age += 5;
 		state.moodTicks += 5;
 		Player player = WhispersPlugin.nearestPlayer(shifter.getLocation(), 64);
@@ -233,7 +250,7 @@ final class Shifter implements Listener {
 					vanish(shifter);
 					if (spot != null) {
 						Bukkit.getScheduler().runTaskLater(plugin, () -> {
-							Enderman creeper = spawnShifter(spot);
+							Mob creeper = spawnShifter(spot);
 							{
 								if (plugin.npcs == null || !plugin.npcs.hideShifterBody(creeper, 20 * 60)) {
 									creeper.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 20 * 60, 0, false, false));
@@ -266,7 +283,7 @@ final class Shifter implements Listener {
 	}
 
 	/** Keeps 8-16 blocks from the player. */
-	private static void stalk(Enderman shifter, Player player, double distance) {
+	private static void stalk(Mob shifter, Player player, double distance) {
 		if (distance > 16) shifter.getPathfinder().moveTo(player.getLocation(), 1.0);
 		else if (distance < 8) {
 			Vector away = shifter.getLocation().toVector().subtract(player.getLocation().toVector()).setY(0).normalize().multiply(6);
@@ -274,7 +291,7 @@ final class Shifter implements Listener {
 		} else shifter.getPathfinder().stopPathfinding();
 	}
 
-	private static void chase(Enderman shifter, Player player, State state) {
+	private static void chase(Mob shifter, Player player, State state) {
 		state.chasing = true;
 		state.moodTicks = 0;
 		setBase(shifter, Attribute.GENERIC_MOVEMENT_SPEED, 0.34);
@@ -289,7 +306,7 @@ final class Shifter implements Listener {
 	}
 
 	/** Vanishes in smoke, blinding players nearby for 5 seconds. Returns true for the tick loop. */
-	private boolean vanish(Enderman shifter) {
+	private boolean vanish(Mob shifter) {
 		Location at = shifter.getLocation();
 		WhispersPlugin.smoke(at);
 		at.getWorld().playSound(at, Sound.ENTITY_ENDERMAN_TELEPORT, SoundCategory.HOSTILE, 1f, 0.5f);
@@ -356,6 +373,12 @@ final class Shifter implements Listener {
 					|| ("disguise".equals(kind) && !disguises.containsKey(e.getUniqueId()))
 					|| "shifter_flash".equals(kind)) e.remove();
 		}
+	}
+
+	@EventHandler(ignoreCancelled = true)
+	public void onTransform(org.bukkit.event.entity.EntityTransformEvent event) {
+		// A Husk underwater turns into a Zombie: not the Shifter.
+		if (isShifter(event.getEntity())) event.setCancelled(true);
 	}
 
 	@EventHandler
