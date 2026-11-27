@@ -6,6 +6,11 @@ spawns:
   herobrine: true
   eyes: true
   staring: true
+  bosses: true
+
+# Chance a naturally spawning overworld creeper or skeleton is replaced by the Mutant
+# Creeper or Skeleton King (0.001 = 1 in 1,000). Never two of the same boss within 128 blocks.
+boss-chance: 0.001
 
 # Herobrine looks like Steve unless you give him a skin. To use one: upload the skin
 # PNG at https://mineskin.org, then copy its texture "value" and "signature" here.

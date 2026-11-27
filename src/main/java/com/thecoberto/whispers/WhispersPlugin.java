@@ -45,7 +45,7 @@ public final class WhispersPlugin extends JavaPlugin {
 			new Rule("herobrine", "herobrine", 6000, 0.15, 28, 48, 15),
 			new Rule("eyes", "eyes", 3000, 0.25, 18, 40, 4));
 
-	static final List<String> SETTINGS = List.of("shifter", "presence", "herobrine", "eyes", "staring");
+	static final List<String> SETTINGS = List.of("shifter", "presence", "herobrine", "eyes", "staring", "bosses");
 	static final List<String> SUMMONABLE = List.of("shifter", "disguise", "shifted_player", "presence", "herobrine",
 			"eyes", "mutant_creeper", "skeleton_king");
 
