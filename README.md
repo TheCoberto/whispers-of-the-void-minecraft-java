@@ -11,7 +11,9 @@ Paper port of the Bedrock add-on [whispers-of-the-void](https://github.com/TheCo
 - **Eyes in the Dark**: pale eyes in the darkness that blink, and vanish when you get within 12 blocks.
 - **Staring animals**: if you haven't slept in over a day, very rarely a herd of farm animals freezes and stares at you in total silence, then goes back to normal.
 
-## Bosses (`/whispers summon` only)
+## Bosses (`/whispers summon`, or very rarely on their own)
+
+A naturally spawning overworld creeper or skeleton has a 1 in 1,000 chance (`boss-chance` in `config.yml`) to be the Mutant Creeper or Skeleton King instead, never two of the same boss within 128 blocks. Toggle with `/whispers spawns bosses on|off`.
 
 - **Mutant Creeper**: 2.4x size, 200 health. Explosions far stronger than a creeper's (power 8); it survives them and keeps coming after a short recovery. Follows `mobGriefing`. Drops 6-14 gunpowder and 1-3 TNT.
 - **Skeleton King**: 1.7x size with a crown, 250 health. Shoots, slams players within 5 blocks, summons up to 6 skeletons, and gets enraged (faster, summons more) below half health. His skeletons crumble when he dies. Drops an enchanted Skeleton King's Crown, an enchanted bow, bones and gold. With Skeleton Variants installed, some of his skeletons come out as variants.

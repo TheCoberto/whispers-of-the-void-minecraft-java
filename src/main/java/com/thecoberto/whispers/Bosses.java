@@ -35,7 +35,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
 /**
- * The two bosses, summoned only (/whispers summon). Same health, abilities and loot as
+ * The two bosses: summoned (/whispers summon) or, very rarely, in place of a natural creeper or skeleton. Same health, abilities and loot as
  * Bedrock; they're scaled-up vanilla mobs, since Paper can't add their models.
  *
  * Mutant Creeper: 200 health, 2.4x size. Its blast is much stronger than a creeper's, it
@@ -188,6 +188,40 @@ final class Bosses implements Listener {
 		for (Entity e : event.getEntities()) {
 			if ("skeleton_king".equals(WhispersPlugin.kindOf(e))) kings.putIfAbsent(e.getUniqueId(), new King());
 		}
+	}
+
+	// ---------- Rare natural spawns ----------
+
+	/**
+	 * A naturally spawning overworld creeper or skeleton is, very rarely, replaced by its boss
+	 * (boss-chance in config.yml, 1 in 1,000 by default). Never with another of the same boss
+	 * within 128 blocks.
+	 */
+	@EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+	public void onNaturalSpawn(CreatureSpawnEvent event) {
+		if (event.getSpawnReason() != CreatureSpawnEvent.SpawnReason.NATURAL || !plugin.enabled("bosses")) return;
+		Location at = event.getLocation();
+		if (at.getWorld().getEnvironment() != org.bukkit.World.Environment.NORMAL) return;
+		String kind = switch (event.getEntityType()) {
+			case CREEPER -> "mutant_creeper";
+			case SKELETON -> "skeleton_king";
+			default -> null;
+		};
+		if (kind == null) return;
+		if (ThreadLocalRandom.current().nextDouble() >= plugin.getConfig().getDouble("boss-chance", 0.001)) return;
+		if (WhispersPlugin.nearby(at, kind, 128)) return;
+		event.setCancelled(true);
+		if (kind.equals("mutant_creeper")) spawnMutantCreeper(at);
+		else spawnSkeletonKing(at);
+		for (Player p : playersNear(at, 48)) {
+			p.playSound(p, Sound.ENTITY_WITHER_AMBIENT, SoundCategory.HOSTILE, 0.8f, 0.5f);
+			p.sendActionBar(Component.text("Something big is nearby...", NamedTextColor.DARK_RED));
+		}
+	}
+
+	private static List<Player> playersNear(Location at, double radius) {
+		return at.getWorld().getPlayers().stream()
+				.filter(p -> WhispersPlugin.isPlaying(p) && p.getLocation().distance(at) <= radius).toList();
 	}
 
 	// ---------- Both ----------

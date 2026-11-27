@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.4
+- The Mutant Creeper and Skeleton King can now spawn on their own: a naturally spawning overworld creeper or skeleton has a 1 in 1,000 chance (`boss-chance` in `config.yml`) to be the boss instead, never two of the same boss within 128 blocks. Nearby players get a warning. Turn it off with `/whispers spawns bosses off`.
+
 ## 1.0.3
 - Herobrine, Shifted Players and the Shifter's body no longer count as players. Each one found *itself* as the nearest player, which made Herobrine vanish and Shifted Players reveal the moment they appeared.
 - Herobrine stays and stares when you look at him, with only a tiny chance of vanishing. Getting within 7 blocks or hitting him still makes him vanish.
