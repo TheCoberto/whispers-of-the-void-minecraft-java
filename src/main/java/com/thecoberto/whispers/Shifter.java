@@ -48,7 +48,9 @@ final class Shifter implements Listener {
 
 	/** How a revealed Shifter behaves, picked at random like the Bedrock entity's moods. */
 	private enum Mood {
-		STALK_AND_VANISH(30), STALK_THEN_CHASE(20), CHASE(15), VANISH_WHEN_WATCHED(25), SEEKER(10);
+		STALK_AND_VANISH(30), STALK_THEN_CHASE(20), CHASE(15), VANISH_WHEN_WATCHED(25), SEEKER(10),
+		/** Only for natural far-off spawns (weight 0, never rolled): stands still in the distance and stares. */
+		WATCH(0);
 
 		final int weight;
 
@@ -133,6 +135,23 @@ final class Shifter implements Listener {
 		if (state != null) {
 			int pick = ThreadLocalRandom.current().nextInt(100);
 			state.mood = pick < 45 ? Mood.STALK_THEN_CHASE : pick < 80 ? Mood.CHASE : Mood.SEEKER;
+		}
+		return shifter;
+	}
+
+	/** How close you can get to a watching Shifter before it's gone. */
+	private static final double WATCH_VANISH_RANGE = 20;
+
+	/**
+	 * A Shifter that spawned on its own, far off. Half the time it just stands and watches
+	 * you (see Mood.WATCH); otherwise it gets a random mood like any other.
+	 */
+	Mob spawnNatural(Location at) {
+		Mob shifter = spawnShifter(at);
+		State state = shifters.get(shifter.getUniqueId());
+		if (state != null && ThreadLocalRandom.current().nextBoolean()) {
+			state.mood = Mood.WATCH;
+			state.vanishAfter = 20 * ThreadLocalRandom.current().nextInt(20, 41);
 		}
 		return shifter;
 	}
@@ -266,6 +285,15 @@ final class Shifter implements Listener {
 					return true;
 				}
 				stalk(shifter, player, distance);
+			}
+			case WATCH -> {
+				// Stands dead still and stares. Walk toward it and it's gone (now and then it
+				// comes for you instead); left alone, it fades away after 20-40 seconds.
+				shifter.getPathfinder().stopPathfinding();
+				if (distance <= WATCH_VANISH_RANGE) {
+					if (ThreadLocalRandom.current().nextInt(4) == 0) chase(shifter, player, state);
+					else return vanish(shifter);
+				} else if (state.moodTicks > state.vanishAfter) return vanish(shifter);
 			}
 			case SEEKER -> {
 				// Sniffs you out unless you sneak.

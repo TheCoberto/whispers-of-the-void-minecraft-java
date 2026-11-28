@@ -40,7 +40,7 @@ public final class WhispersPlugin extends JavaPlugin {
 
 	private static final List<Rule> RULES = List.of(
 			new Rule("shifter", "disguise", 3000, 0.03, 24, 48, 15),
-			new Rule("shifter", "shifter", 6000, 0.02, 30, 48, 15),
+			new Rule("shifter", "shifter", 6000, 0.04, 30, 48, 15),
 			new Rule("presence", "presence", 4800, 0.03, 16, 32, 7),
 			new Rule("herobrine", "herobrine", 6000, 0.15, 28, 48, 15),
 			new Rule("eyes", "eyes", 3000, 0.25, 18, 40, 4));
@@ -105,7 +105,12 @@ public final class WhispersPlugin extends JavaPlugin {
 				// Like the Bedrock density limit: one of each near a player at a time.
 				if (nearby(player.getLocation(), rule.kind(), 64)) continue;
 				Location spot = findSpot(player.getLocation(), rule.minDistance(), rule.maxDistance(), rule.maxLight());
-				if (spot != null) spawn(rule.kind(), spot, player);
+				if (spot == null) continue;
+				if (rule.kind().equals("shifter")) {
+					// Natural Shifters face the player and may just stand there watching.
+					spot.setDirection(player.getLocation().toVector().subtract(spot.toVector()));
+					shifter.spawnNatural(spot);
+				} else spawn(rule.kind(), spot, player);
 			}
 		}
 	}

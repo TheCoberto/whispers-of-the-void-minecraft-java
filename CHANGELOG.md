@@ -1,5 +1,8 @@
 # Changelog
 
+## 1.0.5
+- A Shifter that spawns on its own (30-48 blocks away) now stands still and watches you half the time. Walk within 20 blocks and it vanishes (1 in 4 times it chases you instead); left alone, it's gone after 20-40 seconds. Far-off Shifters spawn twice as often as before (4% chance every 5 minutes, up from 2%).
+
 ## 1.0.4
 - The Mutant Creeper and Skeleton King can now spawn on their own: a naturally spawning overworld creeper or skeleton has a 1 in 1,000 chance (`boss-chance` in `config.yml`) to be the boss instead, never two of the same boss within 128 blocks. Nearby players get a warning. Turn it off with `/whispers spawns bosses off`.
 
